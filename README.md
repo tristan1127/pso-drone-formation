@@ -2,7 +2,7 @@
 
 **基于粒子群优化算法的无人机集群编队调度系统**
 
-> 工程智能基础 · 第1阶段大作业 · 同济大学
+> 工程智能基础 · 第1阶段实践任务 · 同济大学
 
 ---
 
@@ -56,7 +56,7 @@ pip install numpy matplotlib scipy
 python pso_drone.py
 ```
 
-运行完成后自动在当前目录生成全部输出文件（约2~3分钟）。
+运行完成后自动在当前目录生成全部输出文件（约2~3分钟），共7个文件。
 
 ### 输出文件
 
@@ -69,8 +69,6 @@ python pso_drone.py
 | `drone_convergence.png` | 四目标收敛曲线对比（2×2） |
 | `drone_final.png` | 最终队形结果对比（三图并排） |
 | `drone_params.png` | 参数敏感性分析 |
-| `drone_radar.png` | 四目标性能雷达图 |
-| `drone_flowchart.png` | 算法流程图 |
 
 ---
 
@@ -224,7 +222,7 @@ pip install numpy matplotlib scipy
 python pso_drone.py
 ```
 
-All output files are generated automatically in the current directory (approximately 2–3 minutes).
+All output files are generated automatically in the current directory (approximately 2–3 minutes). 7 files in total.
 
 ### Output Files
 
@@ -237,8 +235,6 @@ All output files are generated automatically in the current directory (approxima
 | `drone_convergence.png` | Four-objective convergence curves comparison (2×2) |
 | `drone_final.png` | Final formation results comparison (3-panel) |
 | `drone_params.png` | Parameter sensitivity analysis |
-| `drone_radar.png` | Four-objective performance radar chart |
-| `drone_flowchart.png` | Algorithm flowchart |
 
 ---
 

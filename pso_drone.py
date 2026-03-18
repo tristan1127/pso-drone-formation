@@ -33,6 +33,7 @@ import matplotlib.animation as animation
 from matplotlib.gridspec import GridSpec
 from scipy.optimize import linear_sum_assignment
 import warnings
+import time
 warnings.filterwarnings("ignore")
 
 plt.rcParams["font.sans-serif"] = ["SimHei", "Arial Unicode MS", "DejaVu Sans"]
@@ -782,152 +783,6 @@ def plot_params(starts: np.ndarray, targets: np.ndarray, filename: str):
     plt.savefig(filename, dpi=150, bbox_inches="tight", facecolor="white")
     plt.close()
     print(f"  ✓  {filename}")
-
-
-# ── 7-E  四目标性能雷达图 ────────────────────────────────────
-
-def plot_radar(pso_a: PSO, pso_s: PSO, filename: str):
-    labels = ["总路程", "完成时间", "总能耗", "碰撞惩罚"]
-
-    def get_vals(pso):
-        sp = np.maximum(pso.gbest_x, 0.1)
-        d  = np.linalg.norm(pso.targets - pso.starts, axis=1)
-        return np.array([
-            np.sum(d),
-            np.max(d / sp),
-            np.sum(d * sp**2),
-            collision_penalty(pso.starts, pso.targets, sp)
-        ])
-
-    va  = get_vals(pso_a)
-    vs  = get_vals(pso_s)
-    ref = np.maximum(np.maximum(va, vs), 1e-6)
-    va_n = va / ref
-    vs_n = vs / ref
-
-    angles   = np.linspace(0, 2*np.pi, 4, endpoint=False).tolist()
-    angles  += angles[:1]
-    va_plot  = np.append(va_n, va_n[0])
-    vs_plot  = np.append(vs_n, vs_n[0])
-
-    fig, ax = plt.subplots(figsize=(6, 6),
-                            subplot_kw=dict(polar=True))
-    fig.patch.set_facecolor("white")
-    ax.set_facecolor(C_GRAY)
-    ax.plot(angles, va_plot, color=C_ORANGE, lw=2.2, label="箭形 ➤")
-    ax.fill(angles, va_plot, color=C_ORANGE, alpha=0.15)
-    ax.plot(angles, vs_plot, color=C_BLUE,   lw=2.2, label="五角星 ★")
-    ax.fill(angles, vs_plot, color=C_BLUE,   alpha=0.15)
-    ax.set_xticks(angles[:-1])
-    ax.set_xticklabels(labels, fontsize=11, fontweight="bold", color=C_DARK)
-    ax.set_yticklabels([])
-    ax.set_ylim(0, 1.2)
-    ax.grid(color="#CCCCCC", lw=0.7)
-    ax.set_title("四目标性能雷达图\n（越靠内表现越优）",
-                 fontsize=11, fontweight="bold", color=C_DARK, pad=22)
-    ax.legend(loc="upper right", bbox_to_anchor=(1.35, 1.12), fontsize=9)
-    plt.tight_layout()
-    plt.savefig(filename, dpi=150, bbox_inches="tight", facecolor="white")
-    plt.close()
-    print(f"  ✓  {filename}")
-
-
-# ── 7-F  算法流程图 ──────────────────────────────────────────
-
-def plot_flowchart(filename: str):
-    fig, ax = plt.subplots(figsize=(10, 9.5))
-    fig.patch.set_facecolor("white")
-    ax.set_facecolor("white")
-    ax.set_xlim(0, 10); ax.set_ylim(0, 10)
-    ax.axis("off")
-
-    def box(cx, cy, w, h, txt, fc=C_ORANGE, tc="white", fs=8.5):
-        ax.add_patch(plt.Rectangle(
-            (cx-w/2, cy-h/2), w, h,
-            facecolor=fc, edgecolor="#CCCCCC", lw=1.3, zorder=3))
-        ax.text(cx, cy, txt, ha="center", va="center",
-                fontsize=fs, color=tc, fontweight="bold",
-                zorder=4, multialignment="center")
-
-    def diamond(cx, cy, w, h, txt):
-        ax.add_patch(plt.Polygon(
-            [[cx, cy+h/2],[cx+w/2,cy],[cx,cy-h/2],[cx-w/2,cy]],
-            facecolor="#F5A623", edgecolor="#CCCCCC", lw=1.3, zorder=3))
-        ax.text(cx, cy, txt, ha="center", va="center",
-                fontsize=8.5, color="white", fontweight="bold",
-                zorder=4, multialignment="center")
-
-    def arr(x1, y1, x2, y2, lbl="", lc="#555555"):
-        ax.annotate("", xy=(x2,y2), xytext=(x1,y1),
-                    arrowprops=dict(arrowstyle="->", color=lc, lw=1.5))
-        if lbl:
-            ax.text((x1+x2)/2+0.12, (y1+y2)/2,
-                    lbl, fontsize=8.5, color=lc)
-
-    # 节点
-    box(5, 9.55, 8.8, 0.6,
-        "开始：输入20架无人机起点、目标队形坐标、PSO超参数",
-        fc=C_DARK, fs=8)
-    box(5, 8.65, 8.8, 0.6,
-        "匈牙利算法：构建N×N代价矩阵，O(n³)求最优指派\n"
-        "确定【谁飞哪个目标点】，最小化总路程（一次性固定）",
-        fc="#5B7FA6", fs=8)
-    box(5, 7.65, 8.8, 0.7,
-        "初始化粒子群（n_particles=60）\n"
-        "每个粒子 = 20维速度向量  v_i ∈ [1.0, 10.0] m/s\n"
-        "随机初始化粒子位置与速度",
-        fc=C_ORANGE, fs=8)
-    box(5, 6.60, 8.8, 0.75,
-        "计算四目标适应度 F\n"
-        "f1=完成时间max(d/v)  f2=总能耗Σ(d·v²)\n"
-        "f3=碰撞惩罚（向量化直线轨迹检测，15时刻）  f4=总路程\n"
-        "F = w1·f1_norm + w2·f2_norm + w3·f3 + w4·f4_norm",
-        fc=C_ORANGE, fs=7.8)
-    box(5, 5.55, 8.8, 0.6,
-        "更新 pbest（个体历史最优）和 gbest（全局最优速度方案）",
-        fc=C_ORANGE, fs=8)
-    box(5, 4.55, 8.8, 0.7,
-        "更新粒子速度（三力合力）：\n"
-        "v = w·v + c1·r1·(pbest-x) + c2·r2·(gbest-x)\n"
-        "更新位置：x = clip(x+v, v_min, v_max)",
-        fc=C_ORANGE, fs=8)
-    diamond(5, 3.45, 4.0, 0.9,
-            "达到最大\n迭代次数\n(120代)?")
-    box(5, 2.25, 8.8, 0.75,
-        "输出最优速度方案 gbest\n"
-        "计算各机飞行时间 T_i = d_i / v_i\n"
-        "统计：总路程、完成时间、总能耗、碰撞次数",
-        fc=C_DARK, fs=8)
-    box(5, 0.95, 8.8, 0.75,
-        "生成飞行动画（gif）  +  7张静态分析图\n"
-        "输出PSO收敛曲线、队形对比、参数分析、雷达图",
-        fc=C_DARK, fs=8)
-
-    # 箭头
-    arr(5, 9.25, 5, 8.95)
-    arr(5, 8.35, 5, 8.00)
-    arr(5, 7.30, 5, 6.97)
-    arr(5, 6.22, 5, 5.85)
-    arr(5, 5.25, 5, 4.90)
-    arr(5, 4.20, 5, 3.90)
-    arr(5, 3.00, 5, 2.62, "是")
-    arr(5, 1.87, 5, 1.32)
-
-    # 循环箭头（否 → 重新计算适应度）
-    ax.annotate("", xy=(9.2, 6.60), xytext=(7.0, 3.45),
-                arrowprops=dict(arrowstyle="->", color=C_BLUE, lw=1.5,
-                                connectionstyle="arc3,rad=-0.35"))
-    ax.text(9.35, 5.2, "否\n（继续\n迭代）",
-            fontsize=8.5, color=C_BLUE, ha="left", va="center")
-
-    ax.set_title("PSO无人机编队队形优化 — 算法流程图",
-                 fontsize=12, fontweight="bold", color=C_DARK, pad=10)
-    plt.tight_layout()
-    plt.savefig(filename, dpi=150, bbox_inches="tight", facecolor="white")
-    plt.close()
-    print(f"  ✓  {filename}")
-
-
 # ══════════════════════════════════════════════════════════════
 # 八、主程序
 # ══════════════════════════════════════════════════════════════
@@ -941,7 +796,11 @@ if __name__ == "__main__":
     # ── 生成队形 & 起点 ──────────────────────────────────────
     arr_tgt  = make_arrow(n=20, scale=6.0)
     star_tgt = make_star(n=20, scale=5.5)
-    np.random.seed(42)
+
+    # 时间戳种子：每次运行初始位置不同，同时打印种子方便复现
+    seed = int(time.time())
+    np.random.seed(seed)
+    print(f"本次随机种子：{seed}（如需复现，将此数替换 seed 变量）")
     starts   = np.random.uniform(-11, 11, (20, 2))
 
     # ── 匈牙利指派（一次性）─────────────────────────────────
@@ -998,8 +857,6 @@ if __name__ == "__main__":
     plot_convergence(pso_a, pso_s,            "drone_convergence.png")
     plot_final(pso_a, pso_s,                  "drone_final.png")
     plot_params(starts, arr_assigned,         "drone_params.png")
-    plot_radar(pso_a, pso_s,                  "drone_radar.png")
-    plot_flowchart(                           "drone_flowchart.png")
 
     # ── 生成动画 ─────────────────────────────────────────────
     print("\n【生成飞行动画】")
@@ -1010,7 +867,7 @@ if __name__ == "__main__":
 
     # ── 输出汇总 ─────────────────────────────────────────────
     print("\n" + "="*64)
-    print("完成 ✓  共 9 个输出文件：")
+    print("完成 ✓  共 7 个输出文件：")
     print()
     print("  静态图（放PPT）：")
     print("    drone_snap_arrow.png    箭形演化快照（6宫格）")
@@ -1018,8 +875,6 @@ if __name__ == "__main__":
     print("    drone_convergence.png   四目标收敛曲线（2×2）")
     print("    drone_final.png         最终结果对比（三图并排）")
     print("    drone_params.png        参数敏感性分析")
-    print("    drone_radar.png         四目标性能雷达图")
-    print("    drone_flowchart.png     算法流程图")
     print()
     print("  动画（汇报时播放）：")
     print("    drone_anim_arrow.gif    箭形飞行动画")
